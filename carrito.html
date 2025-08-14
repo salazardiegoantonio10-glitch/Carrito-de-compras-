@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carrito de Compras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px solid #ff5a5a;
+            border-radius: 10px;
+            background-color: #fff8f8;
+        }
+        h1 { text-align: center; color: #ff5a5a; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { padding: 8px; border-bottom: 1px solid #ccc; text-align: center; }
+        th { background-color: #ffe5e5; }
+        .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 10px; }
+        button {
+            padding: 6px 10px; border: none; color: white; cursor: pointer;
+            border-radius: 5px; margin: 5px 0;
+        }
+        .btn-eliminar { background-color: #ff9999; }
+        .btn-eliminar:hover { background-color: #e18383; }
+        .btn-whatsapp { background-color: #25D366; }
+        .btn-whatsapp:hover { background-color: #1ebe5d; }
+        .btn-vaciar { background-color: #ff5a5a; }
+        .btn-vaciar:hover { background-color: #e14e4e; }
+    </style>
+</head>
+<body>
+    <h1>🛒 Tu carrito</h1>
+    <table id="tabla-carrito">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div class="total" id="total">Total: $0.00</div>
+    <button class="btn-vaciar" onclick="vaciarCarrito()">Vaciar carrito</button>
+    <button class="btn-whatsapp" onclick="finalizarCompra()">Finalizar compra</button>
+
+    <script>
+        const tuNumeroWhatsApp = "5211234567890"; // Pon tu número con código de país
+
+        function obtenerParametro(nombre) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(nombre);
+        }
+
+        let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+        const producto = obtenerParametro("producto");
+        const precio = parseFloat(obtenerParametro("precio"));
+
+        if (producto && !isNaN(precio)) {
+            let itemExistente = carrito.find(item => item.producto === producto);
+            if (itemExistente) {
+                itemExistente.cantidad++;
+            } else {
+                carrito.push({ producto, precio, cantidad: 1 });
+            }
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+        }
+
+        function mostrarCarrito() {
+            const tbody = document.querySelector("#tabla-carrito tbody");
+            tbody.innerHTML = "";
+            let total = 0;
+
+            carrito.forEach((item, index) => {
+                let subtotal = item.precio * item.cantidad;
+                total += subtotal;
+
+                let fila = document.createElement("tr");
+                fila.innerHTML = `
+                    <td>${item.producto}</td>
+                    <td>$${item.precio.toFixed(2)}</td>
+                    <td>${item.cantidad}</td>
+                    <td>$${subtotal.toFixed(2)}</td>
+                    <td><button class="btn-eliminar" onclick="eliminarProducto(${index})">❌</button></td>
+                `;
+                tbody.appendChild(fila);
+            });
+
+            document.getElementById("total").textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        function eliminarProducto(index) {
+            carrito.splice(index, 1);
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            mostrarCarrito();
+        }
+
+        function vaciarCarrito() {
+            localStorage.removeItem("carrito");
+            carrito = [];
+            mostrarCarrito();
+        }
+
+        function finalizarCompra() {
+            if (carrito.length === 0) {
+                alert("El carrito está vacío");
+                return;
+            }
+
+            let mensaje = "¡Hola! Quiero hacer el siguiente pedido:%0A";
+            carrito.forEach(item => {
+                mensaje += `- ${item.producto} x${item.cantidad} ($${(item.precio*item.cantidad).toFixed(2)})%0A`;
+            });
+            let total = carrito.reduce((sum, item) => sum + item.precio*item.cantidad, 0);
+            mensaje += `Total: $${total.toFixed(2)}`;
+
+            window.open(`https://wa.me/${tuNumeroWhatsApp}?text=${mensaje}`, "_blank");
+        }
+
+        mostrarCarrito();
+    </script>
+</body>
+</html>
